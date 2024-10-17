@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot de Inglês - BootyBot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f0f0f0;
+            background-image: linear-gradient(to right, #3c3b6e 50%, #b22234 50%);
+            background-size: cover;
+            background-repeat: no-repeat;
+            height: 100vh;
+        }
+        .chat-container {
+            max-width: 600px;
+            margin: 50px auto;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        .chat-header {
+            background-color: #3c3b6e;
+            color: white;
+            padding: 10px;
+            text-align: center;
+        }
+        .chat-body {
+            padding: 20px;
+            height: 400px;
+            overflow-y: auto;
+            box-shadow: inset 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        .chat-footer {
+            padding: 10px;
+            background-color: #f0f0f0;
+            display: flex;
+            gap: 10px;
+        }
+        .chat-bubble {
+            border-radius: 15px;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            max-width: 80%;
+            color: white;
+            word-wrap: break-word;
+        }
+        .user-bubble {
+            background-color: salmon;
+            margin-left: auto;
+        }
+        .agent-bubble {
+            background-color: #00509E; /* Azul mais escuro para melhor contraste */
+        }
+        .chat-input {
+            flex: 1;
+            border-radius: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+        .send-btn {
+            border-radius: 50%;
+            background-color: #3c3b6e;
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h4>BootyBot - Chat de Inglês</h4>
+        </div>
+        <div class="chat-body" id="chat-body">
+            <!-- Chat bubbles will appear here -->
+        </div>
+        <div class="chat-footer">
+            <input type="text" id="chat-input" class="chat-input" placeholder="Digite sua mensagem..." onkeydown="handleKeyDown(event)">
+            <button class="send-btn" onclick="sendMessage()">&#10148;</button>
+        </div>
+    </div>
+
+    <script>
+        const apiUrl = "https://englishchat.cognitiveservices.azure.com/openai/deployments/gpt-35-turbo/chat/completions?api-version=2024-08-01-preview";
+        const apiKey = "cf003955fb984c3fbad1a7fa9b6bec15";
+
+        // Handle the 'Enter' key to send the message
+        function handleKeyDown(event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const inputField = document.getElementById('chat-input');
+            const message = inputField.value;
+            if (message.trim() === "") return;
+
+            // Append user message to chat body
+            appendMessage('user', message);
+            inputField.value = "";
+
+            // Prepare payload for Azure API
+            const payload = {
+                "messages": [
+                    {"role": "system", "content": "Você é um chatbot especializado em inglês. No início, pergunte o nível de inglês do aluno e responda baseado no nível informado."},
+                    {"role": "user", "content": message}
+                ],
+                "temperature": 0.7,
+                "max_tokens": 800,
+                "top_p": 0.95,
+                "frequency_penalty": 0,
+                "presence_penalty": 0
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "api-key": apiKey
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                if (data && data.choices && data.choices.length > 0) {
+                    const botMessage = data.choices[0].message.content;
+                    appendMessage('agent', botMessage);
+                } else {
+                    appendMessage('agent', "Desculpe, não consegui processar sua mensagem.");
+                }
+            } catch (error) {
+                console.error("Erro ao conectar à API:", error);
+                appendMessage('agent', "Desculpe, houve um erro ao processar sua mensagem.");
+            }
+        }
+
+        function appendMessage(sender, message) {
+            const chatBody = document.getElementById('chat-body');
+            const bubble = document.createElement('div');
+            bubble.classList.add('chat-bubble');
+            bubble.classList.add(sender === 'user' ? 'user-bubble' : 'agent-bubble');
+            bubble.innerText = message;
+            chatBody.appendChild(bubble);
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
